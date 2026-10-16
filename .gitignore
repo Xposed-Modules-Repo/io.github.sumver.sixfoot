@@ -1,0 +1,25 @@
+# Gradle / Android 构建产物
+build/
+app/build/
+.gradle/
+.kotlin/
+
+# IDE
+.idea/
+*.iml
+captures/
+
+# 本地配置（SDK 路径、签名配置等），各机器自行填写
+local.properties
+.externalNativeBuild/
+.cxx/
+
+# 发布产物与本地密钥
+dist/
+keystore/
+
+# 本地构建日志
+build-output.log
+
+# 技术分析文档（仅本地保留，不上传）
+README-技术分析.md

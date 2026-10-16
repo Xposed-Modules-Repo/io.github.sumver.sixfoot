@@ -1,0 +1,61 @@
+plugins {
+    id 'com.android.application'
+}
+
+// 本机签名配置从 local.properties 读取（该文件不进版本库）。
+// 找不到配置时 release 构建为未签名产物，仓库本身仍可正常构建。
+def localProps = new Properties()
+def localPropsFile = rootProject.file('local.properties')
+if (localPropsFile.exists()) {
+    localPropsFile.withInputStream { localProps.load(it) }
+}
+def hasReleaseSigning = localProps.getProperty('release.storeFile') != null &&
+        localProps.getProperty('release.storePassword') != null
+
+android {
+    namespace 'com.sixfoot.adfree'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "io.github.sumver.sixfoot"
+        minSdk 26
+        targetSdk 34
+        versionCode 5
+        versionName "1.4"
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(localProps.getProperty('release.storeFile'))
+                storePassword localProps.getProperty('release.storePassword')
+                keyAlias localProps.getProperty('release.keyAlias')
+                keyPassword localProps.getProperty('release.keyPassword')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+
+dependencies {
+    compileOnly 'de.robv.android.xposed:api:82'
+    implementation 'com.google.android.material:material:1.12.0'
+}

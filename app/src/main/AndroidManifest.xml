@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="false"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.SixfootAdFree">
+
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <meta-data
+            android:name="xposedmodule"
+            android:value="true" />
+        <meta-data
+            android:name="xposeddescription"
+            android:value="@string/xposed_description" />
+        <meta-data
+            android:name="xposedminversion"
+            android:value="82" />
+        <!-- 不声明 xposedsharedprefs：LSPosed 的「New XSharedPreferences」已被官方标记废弃、
+             计划移除；开关配置改由本模块自带的只读 ContentProvider 传递（标准 Android IPC，
+             不依赖任何 LSPosed 私有机制，1.9.x / 2.x 及以后版本通用，见 Prefs / PrefsProvider）。 -->
+        <meta-data
+            android:name="xposedscope"
+            android:resource="@array/xposed_scope" />
+
+        <!-- 只读配置桥：向被 Hook 的应用进程提供开关布尔值（settings 偏好文件的只读视图，
+             无敏感数据；authority 必须与 Prefs.PROVIDER_AUTHORITY 保持一致）。 -->
+        <provider
+            android:name=".PrefsProvider"
+            android:authorities="io.github.sumver.sixfoot.prefs"
+            android:exported="true" />
+    </application>
+
+</manifest>

@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">六只脚去广告</string>
+    <string name="xposed_description">去除六只脚的开屏广告与开屏VIP推广弹窗：走 App 自带的“无广告跳过”路径，不拦截网络、不修改账号状态</string>
+
+    <string name="settings_subtitle">当前适配版本：4.40.4 (663)</string>
+
+    <string name="group_purify">广告净化</string>
+    <string name="group_mine">「我的」页净化</string>
+
+    <string name="switch_splash">隐藏开屏广告</string>
+    <string name="switch_splash_summary">跳过广告，极速启动</string>
+
+    <string name="switch_vip_popup">隐藏VIP弹窗</string>
+    <string name="switch_vip_popup_summary">隐藏APP不定时弹出的开通会员窗口</string>
+
+    <string name="switch_vip_banner">隐藏会员横幅</string>
+    <string name="switch_vip_banner_summary"></string>
+
+    <string name="settings_hint_title">使用说明</string>
+    <string name="settings_hint">修改设置后，重启六只脚APP后生效\n\n首次使用请先打开一次本界面生成配置文件；如果未生效，请确保已在 LSPosed 里启用本模块且作用域勾选了“六只脚”APP，然后重启六只脚。\n\n本模块开源地址：https://github.com/Xposed-Modules-Repo/io.github.sumver.sixfoot\n如失效、BUG等请前往以上项目提交issue</string>
+</resources>
