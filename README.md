@@ -9,6 +9,8 @@
 3. 隐藏我的页面开通会员横幅
 
 <p></p>
+<img width="1080" height="1142" alt="1792150776749" src="https://github.com/user-attachments/assets/e1872f96-6b9a-44d6-a905-46b80fb59bbf" />
+
 
 <p></p>
 
