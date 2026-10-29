@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- MD3 基础主题：API 31+ 会在 SettingsActivity 中应用动态取色（DynamicColors） -->
-    <style name="Theme.SixfootAdFree" parent="Theme.Material3.DayNight.NoActionBar" />
+    <!-- 固定亮色主题：视觉沿用六只脚设置页（不跟随系统深色模式） -->
+    <style name="Theme.SixfootAdFree" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:windowBackground">@color/page_bg</item>
+        <item name="android:statusBarColor">@color/surface_white</item>
+        <item name="android:navigationBarColor">@color/page_bg</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
 </resources>

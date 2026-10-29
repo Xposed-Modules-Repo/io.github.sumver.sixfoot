@@ -1,8 +1,7 @@
 package com.sixfoot.adfree;
 
 import android.content.SharedPreferences;
-import android.content.res.ColorStateList;
-import android.graphics.Typeface;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.method.LinkMovementMethod;
 import android.text.util.Linkify;
@@ -11,18 +10,13 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.widget.TextViewCompat;
-
-import com.google.android.material.appbar.MaterialToolbar;
-import com.google.android.material.card.MaterialCardView;
-import com.google.android.material.color.DynamicColors;
-import com.google.android.material.color.MaterialColors;
-import com.google.android.material.divider.MaterialDivider;
-import com.google.android.material.materialswitch.MaterialSwitch;
+import androidx.core.content.ContextCompat;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -30,27 +24,31 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 模块设置界面（Material Design 3）。
+ * 模块设置界面。
  *
- * 与 Hook 进程的通信：写入本模块自己的 SharedPreferences（{@code settings}），
- * Hook 进程通过本模块的只读 ContentProvider（{@link PrefsProvider}）读取同一文件（见 {@link Prefs}）。
- * 开关保存后需重启（强制停止）六只脚才生效。
+ * 视觉与交互沿用六只脚自身的「行程上传设置」页（TrackSyncSettingsActivity）：
+ * 顶栏白底 48dp + 居中标题；页面底色 #F5F5F5；分组标题 11sp 灰；白色分组容器内每行
+ * 「图标 + 15sp 标题 + 10sp 说明 + 右侧分段选择器」，行间 1dp 浅灰分割线；
+ * 分段选择器为浅灰胶囊中的绿色选中胶囊（见 {@link SegmentedSwitch}）。
+ *
+ * 模块开关均为布尔值，因此每项显示「关闭 / 开启」两段，选中状态即写入本模块的
+ * SharedPreferences（settings）。Hook 进程通过只读 ContentProvider 读取同一文件
+ * （见 {@link Prefs}），修改后需重启（强制停止）六只脚才生效。
  */
 public class SettingsActivity extends AppCompatActivity {
-
-    /** 分组标题字号（sp）：比卡片内标题（Material3 BodyLarge = 16sp）更大。 */
-    private static final float GROUP_HEADER_SP = 18f;
 
     /** 单个开关项。 */
     private static final class SwitchItem {
         final String key;
         final String title;
         final String summary;
+        final int iconRes;
 
-        SwitchItem(String key, String title, String summary) {
+        SwitchItem(String key, String title, String summary, int iconRes) {
             this.key = key;
             this.title = title;
             this.summary = summary;
+            this.iconRes = iconRes;
         }
     }
 
@@ -59,19 +57,32 @@ public class SettingsActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        DynamicColors.applyToActivityIfAvailable(this);
         super.onCreate(savedInstanceState);
+        configureSystemBars();
         setContentView(R.layout.activity_settings);
 
-        MaterialToolbar toolbar = findViewById(R.id.toolbar);
-        toolbar.setTitle(R.string.app_name);
-        toolbar.setSubtitle(R.string.settings_subtitle);
+        findViewById(R.id.btn_back).setOnClickListener(v -> finish());
 
         prefs = Prefs.ui(this);
         seedDefaults();
 
         container = findViewById(R.id.container);
         buildContent();
+    }
+
+    /** 顶栏白底 + 深色状态栏图标，与 App 设置页保持一致。 */
+    private void configureSystemBars() {
+        Window window = getWindow();
+        window.setStatusBarColor(ContextCompat.getColor(this, R.color.surface_white));
+        window.setNavigationBarColor(ContextCompat.getColor(this, R.color.page_bg));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            View decor = window.getDecorView();
+            int flags = decor.getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+            }
+            decor.setSystemUiVisibility(flags);
+        }
     }
 
     /** 首次打开时写入全部默认值（当前全部开关默认开启）。 */
@@ -96,124 +107,95 @@ public class SettingsActivity extends AppCompatActivity {
         groups.put(getString(R.string.group_purify), Arrays.asList(
                 new SwitchItem(Prefs.K_SPLASH,
                         getString(R.string.switch_splash),
-                        getString(R.string.switch_splash_summary)),
+                        getString(R.string.switch_splash_summary),
+                        R.drawable.ic_setting_splash),
                 new SwitchItem(Prefs.K_VIP_POPUP,
                         getString(R.string.switch_vip_popup),
-                        getString(R.string.switch_vip_popup_summary))));
+                        getString(R.string.switch_vip_popup_summary),
+                        R.drawable.ic_setting_popup)));
         groups.put(getString(R.string.group_mine), Arrays.asList(
                 new SwitchItem(Prefs.K_VIP_BANNER,
                         getString(R.string.switch_vip_banner),
-                        getString(R.string.switch_vip_banner_summary))));
+                        getString(R.string.switch_vip_banner_summary),
+                        R.drawable.ic_setting_banner)));
 
         for (Map.Entry<String, List<SwitchItem>> entry : groups.entrySet()) {
-            addGroup(entry.getKey(), entry.getValue());
+            addSection(entry.getKey(), entry.getValue());
         }
-        addHintCard();
+        addFooter();
     }
 
-    /** 分组标题：比卡片内文字（BodyLarge 16sp）更大且加粗（18sp Bold）。 */
-    private TextView createGroupHeader(CharSequence text) {
+    /** 分组标题 + 白色分组容器（内部为若干开关行，行间 1dp 分割线）。 */
+    private void addSection(String title, List<SwitchItem> items) {
         TextView header = new TextView(this);
-        TextViewCompat.setTextAppearance(header,
-                com.google.android.material.R.style.TextAppearance_Material3_TitleMedium);
-        header.setTypeface(header.getTypeface(), Typeface.BOLD);
-        header.setTextSize(TypedValue.COMPLEX_UNIT_SP, GROUP_HEADER_SP);
-        header.setText(text);
-        header.setTextColor(MaterialColors.getColor(header,
-                com.google.android.material.R.attr.colorPrimary));
-        return header;
-    }
-
-    /** 一组开关 = 分组标题 + 一张 MD3 卡片（行之间带分割线）。 */
-    private void addGroup(String title, List<SwitchItem> items) {
-        TextView header = createGroupHeader(title);
-        LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        headerParams.topMargin = dp(16);
-        headerParams.bottomMargin = dp(8);
-        headerParams.leftMargin = dp(4);
-        container.addView(header, headerParams);
-
-        MaterialCardView card = new MaterialCardView(this);
-        LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        card.setLayoutParams(cardParams);
-        card.setCardElevation(0f);
-        card.setStrokeWidth(dp(1));
-        card.setStrokeColor(ColorStateList.valueOf(MaterialColors.getColor(card,
-                com.google.android.material.R.attr.colorOutlineVariant)));
-        card.setRadius(dp(12));
-
-        LinearLayout cardInner = new LinearLayout(this);
-        cardInner.setOrientation(LinearLayout.VERTICAL);
-        card.addView(cardInner, new LinearLayout.LayoutParams(
+        header.setText(title);
+        header.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f);
+        header.setTextColor(ContextCompat.getColor(this, R.color.text_section));
+        header.setPadding(dp(20), dp(15), dp(20), dp(6));
+        container.addView(header, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackgroundColor(ContextCompat.getColor(this, R.color.surface_white));
 
         for (int i = 0; i < items.size(); i++) {
             SwitchItem item = items.get(i);
-            View row = LayoutInflater.from(this).inflate(R.layout.item_switch, cardInner, false);
+            View row = LayoutInflater.from(this).inflate(R.layout.item_option, card, false);
+            ImageView icon = row.findViewById(R.id.iv_icon);
             TextView tvTitle = row.findViewById(R.id.tv_title);
             TextView tvSummary = row.findViewById(R.id.tv_summary);
-            MaterialSwitch switchWidget = row.findViewById(R.id.switch_widget);
+            SegmentedSwitch selector = row.findViewById(R.id.segmented);
 
+            icon.setImageResource(item.iconRes);
             tvTitle.setText(item.title);
             if (item.summary == null || item.summary.isEmpty()) {
                 tvSummary.setVisibility(View.GONE);
             } else {
                 tvSummary.setText(item.summary);
             }
-            switchWidget.setChecked(prefs.getBoolean(item.key, Prefs.defaultOf(item.key)));
-            switchWidget.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                prefs.edit().putBoolean(item.key, isChecked).apply();
+
+            selector.setOptions(getString(R.string.option_off), getString(R.string.option_on));
+            selector.setSelected(prefs.getBoolean(item.key, Prefs.defaultOf(item.key)) ? 1 : 0, false);
+            selector.setOnSelectedListener(index -> {
+                prefs.edit().putBoolean(item.key, index == 1).apply();
                 // 注意：这里不能用 XposedInit.log —— 模块 App 进程里没有 Xposed API 类
                 // （de.robv.android.xposed.* 为 compileOnly），引用会导致 NoClassDefFoundError。
-                Log.i("SixfootAdFree", "settings: " + item.key + " -> " + isChecked);
+                Log.i("SixfootAdFree", "settings: " + item.key + " -> " + (index == 1));
             });
-            row.setOnClickListener(v -> switchWidget.toggle());
-            cardInner.addView(row);
+            card.addView(row);
 
             if (i != items.size() - 1) {
-                MaterialDivider divider = new MaterialDivider(this);
-                cardInner.addView(divider, new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                View divider = new View(this);
+                divider.setBackgroundColor(ContextCompat.getColor(this, R.color.divider));
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, dp(1));
+                params.leftMargin = dp(20);
+                params.rightMargin = dp(20);
+                card.addView(divider, params);
             }
         }
-        container.addView(card);
+
+        container.addView(card, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     }
 
-    private void addHintCard() {
-        TextView header = createGroupHeader(getString(R.string.settings_hint_title));
-        LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        headerParams.topMargin = dp(16);
-        headerParams.bottomMargin = dp(8);
-        headerParams.leftMargin = dp(4);
-        container.addView(header, headerParams);
-
-        MaterialCardView card = new MaterialCardView(this);
-        card.setCardElevation(0f);
-        card.setStrokeWidth(dp(1));
-        card.setStrokeColor(ColorStateList.valueOf(MaterialColors.getColor(card,
-                com.google.android.material.R.attr.colorOutlineVariant)));
-        card.setRadius(dp(12));
-
+    /** 页尾说明：与 App 设置页一致的小号浅灰注释。 */
+    private void addFooter() {
         TextView hint = new TextView(this);
-        TextViewCompat.setTextAppearance(hint,
-                com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
         hint.setText(R.string.settings_hint);
-        hint.setTextColor(MaterialColors.getColor(hint,
-                com.google.android.material.R.attr.colorOnSurfaceVariant));
-        hint.setLineSpacing(dp(2), 1f);
-        hint.setPadding(dp(16), dp(14), dp(16), dp(14));
-        // 链接转成可点击（点击用浏览器打开）
+        hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f);
+        hint.setTextColor(ContextCompat.getColor(this, R.color.text_note));
+        hint.setLineSpacing(dp(6), 1f);
+        hint.setPadding(dp(20), dp(10), dp(20), 0);
         hint.setMovementMethod(LinkMovementMethod.getInstance());
-        hint.setLinkTextColor(MaterialColors.getColor(hint,
-                com.google.android.material.R.attr.colorPrimary));
+        hint.setLinkTextColor(ContextCompat.getColor(this, R.color.segment_selected));
         Linkify.addLinks(hint, Linkify.WEB_URLS);
-        card.addView(hint, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        container.addView(card);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.topMargin = dp(4);
+        container.addView(hint, params);
     }
 
     private int dp(float value) {

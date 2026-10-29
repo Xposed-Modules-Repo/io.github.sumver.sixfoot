@@ -63,6 +63,12 @@ public class XposedInit implements IXposedHookLoadPackage {
         } catch (Throwable t) {
             log("VipBannerHook install failed: " + t);
         }
+
+        try {
+            MineEntryHook.install(lpparam.classLoader);
+        } catch (Throwable t) {
+            log("MineEntryHook install failed: " + t);
+        }
     }
 
     public static void log(String msg) {

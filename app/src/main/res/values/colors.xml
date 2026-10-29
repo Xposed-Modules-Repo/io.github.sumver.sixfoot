@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 取自六只脚「行程上传设置」页（TrackSyncSettingsActivity）的实际配色 -->
+    <color name="page_bg">#FFF5F5F5</color>
+    <color name="surface_white">#FFFFFFFF</color>
+    <color name="text_primary">#FF303133</color>
+    <color name="text_secondary">#FF999999</color>
+    <color name="text_section">#FF9A9DA0</color>
+    <color name="text_note">#FF96999B</color>
+    <color name="divider">#FFECEEEF</color>
+    <color name="top_bar_divider">#FFE9EAEB</color>
+    <color name="segment_container">#FFEEF0EF</color>
+    <color name="segment_selected">#FF20C77A</color>
+    <color name="segment_text_checked">#FFFFFFFF</color>
+    <color name="segment_text_unchecked">#FF838789</color>
+</resources>
